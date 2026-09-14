@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlantCare AI — Smart Plant Health Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- ============================= NAV ============================= -->
+<header class="site-nav">
+  <div class="nav-inner">
+    <div class="brand-block">
+      <a href="#home" class="brand">🌿 PlantCare AI</a>
+      <span class="brand-subtitle">Smart Plant Health Detection</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#scan">Scan Plant</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#history">Recent Scans</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============================= HERO ============================= -->
+<section class="hero" id="home">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h1>Scan Your Plant with AI</h1>
+      <p class="hero-desc">
+        Point your camera at a plant or leaf and let AI automatically
+        detect its health and identify possible diseases.
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" onclick="goToScanAndStart()">📷 Start Auto Scan</button>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 360 360" class="leaf-illustration">
+        <defs>
+          <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" style="stop-color:#8CD98C;"/>
+            <stop offset="100%" style="stop-color:#1F6B3A;"/>
+          </linearGradient>
+          <clipPath id="leafClip">
+            <path d="M180 40C120 40 60 90 50 170C42 235 90 300 180 320C270 300 318 235 310 170C300 90 240 40 180 40Z"/>
+          </clipPath>
+        </defs>
+        <path d="M180 40C120 40 60 90 50 170C42 235 90 300 180 320C270 300 318 235 310 170C300 90 240 40 180 40Z" fill="url(#leafGrad)"/>
+        <path d="M180 320V70" style="stroke:#F4FBF3;" stroke-width="2" opacity="0.5" clip-path="url(#leafClip)"/>
+        <path d="M180 110L120 150M180 110L240 150M180 160L110 205M180 160L250 205M180 210L120 255M180 210L240 255"
+              style="stroke:#F4FBF3;" stroke-width="1.4" opacity="0.4" clip-path="url(#leafClip)"/>
+        <rect x="40" y="40" width="280" height="6" fill="#B9F0B9" class="scan-line-hero" clip-path="url(#leafClip)"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= AUTO SCAN ============================= -->
+<section class="scan-section" id="scan">
+  <div class="section-head">
+    <p class="eyebrow">Live detection</p>
+    <h2>Auto Scan Plant</h2>
+  </div>
+
+  <div class="scan-layout">
+
+    <!-- Camera card -->
+    <div class="camera-card">
+      <label for="plant_type" class="plant-label">Plant type <span class="optional-tag">(optional, improves results)</span></label>
+      <select id="plant_type">
+        <option value="">Not specified</option>
+        <option>Tomato</option>
+        <option>Rice</option>
+        <option>Wheat</option>
+        <option>Cotton</option>
+        <option>Sugarcane</option>
+        <option>Other</option>
+      </select>
+
+      <div class="camera-frame" id="cameraFrame">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <div class="scan-overlay" id="scanOverlay" style="display:none;">
+          <div class="scan-box" id="scanBox">
+            <span class="corner tl"></span><span class="corner tr"></span>
+            <span class="corner bl"></span><span class="corner br"></span>
+            <div class="scan-line" id="scanLine"></div>
+          </div>
+        </div>
+
+        <div class="camera-placeholder" id="cameraPlaceholder">
+          <span class="placeholder-icon">📷</span>
+          <p>Point your camera at a plant 🌿</p>
+        </div>
+
+        <div class="capture-flash" id="captureFlash"></div>
+      </div>
+
+      <p class="scan-status" id="scanStatusText">Tap "Start Auto Scan" to begin.</p>
+
+      <!-- Progress checklist, shown while capturing/analyzing -->
+      <ul class="progress-checklist" id="progressChecklist" style="display:none;">
+        <li id="pcPlant">Plant detected</li>
+        <li id="pcCapture">Image captured</li>
+        <li id="pcCondition">Checking leaf condition</li>
+        <li id="pcDisease">Detecting disease</li>
+        <li id="pcResult">Preparing result</li>
+      </ul>
+
+      <div class="camera-actions" id="cameraActionsIdle">
+        <button class="btn btn-primary btn-full btn-lg" onclick="startAutoScan()">📷 Start Auto Scan</button>
+      </div>
+
+      <div class="camera-actions" id="cameraActionsScanning" style="display:none;">
+        <button class="btn btn-ghost" onclick="captureNow()">Capture Now</button>
+        <button class="btn btn-ghost" onclick="stopAutoScan()">Stop Scan</button>
+      </div>
+    </div>
+
+    <!-- Result card -->
+    <div class="panel result-panel" id="resultPanel">
+      <div class="result-header">
+        <h3>Plant Health Result</h3>
+        <span id="stateBadge" class="badge idle">Idle</span>
+      </div>
+
+      <div id="resultIdle" class="result-idle">
+        <p>Point your camera at a leaf 🌿 — results will appear here.</p>
+      </div>
+
+      <div id="resultBody" class="result-body" style="display:none;">
+        <img id="capturedThumb" class="captured-thumb" alt="Captured leaf">
+
+        <div class="condition-banner" id="conditionBanner">
+          <span id="conditionIcon">🌿</span>
+          <span id="conditionText">—</span>
+        </div>
+
+        <div class="result-row" id="plantRow"><span>Plant</span><b id="plantOut">—</b></div>
+        <div class="result-row" id="diseaseRow" style="display:none;"><span>Disease</span><b id="diseaseOut">—</b></div>
+
+        <div class="confidence-block" id="confidenceBlock" style="display:none;">
+          <div class="confidence-label"><span>Confidence</span><span id="confidenceValue">—</span></div>
+          <div class="confidence-track"><div class="confidence-fill" id="confidenceFill"></div></div>
+        </div>
+
+        <div class="result-row" id="severityRow" style="display:none;"><span>Severity</span><span id="severityBadge" class="badge sev-None">—</span></div>
+
+        <p class="pesticide-line" id="pesticideLine"></p>
+
+        <div id="treatmentBlock" style="display:none;">
+          <h4>💊 Recommended Treatment</h4>
+          <div class="result-row"><span>Pesticide</span><b id="pesticideOut">—</b></div>
+          <div class="result-row"><span>Recommended Amount</span><b id="dosageOut">—</b></div>
+          <div class="result-row"><span>Frequency</span><b id="frequencyOut">—</b></div>
+        </div>
+
+        <ol id="steps" class="steps" style="display:none;"></ol>
+
+        <p class="disclaimer" id="safetyNote" style="display:none;"></p>
+
+        <div class="result-actions">
+          <button class="btn btn-primary" onclick="scanAnother()">📷 Scan Another Plant</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('history').scrollIntoView({behavior:'smooth'})">View Scan History</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================= HOW IT WORKS ============================= -->
+<section class="how-it-works" id="how-it-works">
+  <div class="section-head">
+    <p class="eyebrow">The process</p>
+    <h2>How it works</h2>
+  </div>
+  <ol class="flow">
+    <li><span class="flow-icon">📷</span><div><h4>Start auto scan</h4><p>Open your camera and point it at a plant or leaf.</p></div></li>
+    <li><span class="flow-icon">🔍</span><div><h4>Searching for plant</h4><p>The camera view is continuously checked for a plant or leaf.</p></div></li>
+    <li><span class="flow-icon">🌿</span><div><h4>Plant detected</h4><p>Once found, the clearest frame is captured automatically.</p></div></li>
+    <li><span class="flow-icon">✅</span><div><h4>Image quality check</h4><p>The capture is checked for blur, darkness, or overexposure before analysis.</p></div></li>
+    <li><span class="flow-icon">🧠</span><div><h4>AI analysis</h4><p>The leaf's condition is analyzed: healthy, dry, dead, or diseased.</p></div></li>
+    <li><span class="flow-icon">📊</span><div><h4>Disease and severity</h4><p>If diseased, see the disease name, confidence, and severity.</p></div></li>
+    <li><span class="flow-icon">💊</span><div><h4>Treatment guidance</h4><p>Get the recommended pesticide, dosage, and application frequency — only when a real infection is found.</p></div></li>
+  </ol>
+</section>
+
+<!-- ============================= RECENT SCANS ============================= -->
+<section class="history-section" id="history">
+  <div class="section-head">
+    <p class="eyebrow">Past scans</p>
+    <h2>Recent Scans</h2>
+  </div>
+  <div class="panel history-panel">
+    <div id="historyList"><span id="historyEmpty">No scans yet. Scans with no plant detected or unclear images aren't recorded.</span></div>
+  </div>
+</section>
+
+<!-- ============================= ABOUT ============================= -->
+<section class="about" id="about">
+  <div class="about-grid">
+    <div>
+      <p class="eyebrow">About this project</p>
+      <h2>An independent AI agriculture assistant</h2>
+      <p>
+        PlantCare AI is built around one idea: point your camera at a leaf
+        and let the system do the rest. It continuously scans the camera
+        view, waits until it's confident a plant or leaf is actually
+        present, automatically captures a clear frame, and only then
+        analyzes the leaf's condition.
+      </p>
+      <p>
+        Healthy, dry, and dead leaves are treated as distinct outcomes from
+        disease — pesticide is only ever recommended for a genuine,
+        treatable infection, never for a leaf that's already healthy or
+        already dead.
+      </p>
+      <p>
+        The current build uses a two-stage colour-pattern heuristic (plant
+        presence, then condition), with an architecture designed so a real
+        trained detection and classification model can be dropped into
+        either stage for production-grade accuracy.
+      </p>
+    </div>
+    <div class="about-stat-card">
+      <div class="stat"><b>Auto</b><span>continuous camera scanning</span></div>
+      <div class="stat"><b>4</b><span>leaf conditions detected</span></div>
+      <div class="stat"><b>13</b><span>plant-specific diseases mapped</span></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <p>PlantCare AI — an independent prototype. Not a substitute for professional agricultural advice.</p>
+</footer>
+
+<!-- ============================= NO PLANT MODAL ============================= -->
+<div id="noPlantModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <span class="modal-icon">⚠️</span>
+    <h3>No Plant Detected</h3>
+    <p class="modal-message">No plant or leaf was detected in the camera view.<br><br>Please point the camera toward a clear plant or leaf.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModalAndRescan('noPlantModal')">🔄 Scan Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= IMAGE NOT CLEAR MODAL ============================= -->
+<div id="unclearModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <span class="modal-icon">⚠️</span>
+    <h3>Image Not Clear</h3>
+    <p class="modal-message" id="unclearMessage">Please move closer and keep the plant/leaf clearly visible.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModalAndRescan('unclearModal')">Scan Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= UNABLE TO IDENTIFY MODAL ============================= -->
+<div id="uncertainModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <span class="modal-icon">⚠️</span>
+    <h3>Unable to Identify Disease</h3>
+    <p class="modal-message">Please scan a clear, affected leaf again.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModalAndRescan('uncertainModal')">Scan Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= CAMERA PERMISSION / ERROR MODAL ============================= -->
+<div id="cameraErrorModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <span class="modal-icon" id="cameraErrorIcon">📷</span>
+    <h3 id="cameraErrorTitle">Camera Permission Required</h3>
+    <p class="modal-message" id="cameraErrorMessage">Please allow camera access to use automatic plant scanning.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeCameraErrorModal(); startAutoScan();">Try Again</button>
+      <label for="uploadFallbackInput" class="btn btn-ghost" id="uploadFallbackLabel" style="display:none;">Upload Plant Image</label>
+      <button class="btn btn-ghost" onclick="closeCameraErrorModal()">Close</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="uploadFallbackInput" accept="image/*" style="display:none;">
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
